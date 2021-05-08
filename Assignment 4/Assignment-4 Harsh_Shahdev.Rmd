@@ -1,0 +1,99 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(readxl)
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(stringr)
+library(utils)
+library(ggplot2)
+library(hrbrthemes)
+library(GGally)
+library(showtext)
+```
+
+
+#Problem 1
+```{r}
+ny <- read.csv("ny_accidents.csv")
+ny[] <- lapply(ny, function(x) type.convert(as.character(x)))
+ny <- ny %>% drop_na()
+```
+
+```{r}
+ny_data <- ny[,c(3,13:18)]
+
+ny_data = aggregate(ny_data[2:7],
+                by = list(ny_data$BOROUGH),
+                FUN = sum )
+ny_data <- (ny_data %>% 
+            rename(
+            BOROUGH = Group.1))
+                              
+```
+
+The parallel coordinate lot has few advantages like number of dimensions that can be visualized is only restricted by the horizontal resolution of the screen. 
+Another advantage is, its easy to spot the correlations between variables in the dataset.
+But the level of clutter present in the visualization reduces the amount of useful information.
+```{r}
+    ggparcoord(ny_data,
+    columns = 2:7, groupColumn = 1,
+    showPoints = TRUE, 
+    title = "Parallel Coordinate Plot for NY Collisions",
+    scale ="globalminmax")
+```
+
+
+#Problem 2
+```{r}
+sat <- data.frame(read_excel("sat_performance.xlsx"))
+```
+
+```{r}
+names(sat) <- as.matrix(sat[1, ])
+sat <- sat[-1, ]
+sat[] <- lapply(sat, function(x) type.convert(as.character(x)))
+sat <- sat %>% drop_na()
+
+```
+
+```{r}
+ggpairs(sat[,c(4:6)], cardinality_threshold = NULL)+theme_ipsum()
+ggsave("sample.png", dpi=300)
+```
+
+```{r}
+result<-sat %>%
+  pivot_longer(-c(`Tests Taken`, `District Name`, `District Code`), 
+               names_to = "Topics", 
+               values_to = "Marks", ,
+               values_drop_na = TRUE)
+```
+
+```{r}
+ggplot(result, aes(x=Topics, y = Marks)) + geom_boxplot()
+```
+
+```{r}
+ggplot(result, aes(x = Marks, fill = Topics)) + geom_density(alpha=0.4)
+```
+
+
+#Problem 3
+```{r}
+
+sat_data <- result[,c(1,5)]
+household <- data.frame(read_excel("Median Household Income.xlsx"))
+sat_house <- left_join(household, sat_data ,by = c("District.Name" = "District Name"))
+```
+
+```{r}
+plot(x = sat_house$Median.Household.Income, y = sat_house$Marks, main = "Median Income VS Marks",
+     xlab = "Median House Income", ylab = "Marks",
+     pch = 19, frame = FALSE)
+```
